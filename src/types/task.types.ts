@@ -13,4 +13,8 @@ export interface TaskFormValues {
     description: string;
 }
 
+export type TaskFormErrors = Partial<
+    Record<keyof TaskFormValues, string>
+>;
+
 export type TaskFilter = 'all' | 'pending' | 'completed';
