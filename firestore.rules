@@ -1,0 +1,56 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function validTask(data) {
+      return data.keys().hasAll([
+          'userId', 'title', 'description',
+          'completed', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId', 'title', 'description',
+          'completed', 'createdAt', 'updatedAt'
+        ])
+        && data.userId is string
+        && data.userId == request.auth.uid
+        && data.title is string
+        && data.title.size() >= 1
+        && data.title.size() <= 100
+        && data.title.matches('(?s).*[^\\s\\p{Z}\\x{000B}\\x{FEFF}].*')
+        && data.description is string
+        && data.description.size() <= 300
+        && data.completed is bool
+        && data.createdAt is int
+        && data.createdAt >= 0
+        && data.updatedAt is int
+        && data.updatedAt >= 0
+        && data.updatedAt >= data.createdAt;
+    }
+
+    match /tasks/{taskId} {
+      allow read: if signedIn()
+        && resource.data.userId == request.auth.uid;
+
+      allow create: if signedIn()
+        && validTask(request.resource.data);
+
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && validTask(request.resource.data)
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if signedIn()
+        && resource.data.userId == request.auth.uid;
+    }
+
+    // Incluye _emailLimits: solamente Firebase Admin puede acceder.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

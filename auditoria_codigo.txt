@@ -1,0 +1,3711 @@
+================================================================================
+PROYECTO: MATECODE
+CONSOLIDADO DE CODIGO FUENTE PARA AUDITORIA DE INTELIGENCIA ARTIFICIAL
+TOTAL DE ARCHIVOS INCLUIDOS: 47
+FECHA: 2026-11-18T21:40:30.217Z
+================================================================================
+
+INSTRUCCION PARA LA IA AUDITORA:
+Este documento contiene la totalidad del codigo fuente, infraestructura, tipos,
+servicios, logica de negocio, componentes y reglas de seguridad de este proyecto.
+Cada archivo se encuentra claramente delimitado con su ruta relativa, lenguaje y
+bloques <<< INICIO DEL ARCHIVO: [ruta] >>> y <<< FIN DEL ARCHIVO: [ruta] >>>.
+Por favor realiza una auditoria exhaustiva evaluando:
+  1. Arquitectura y diseno general (Frontend React + Vite + TS, Serverless API en Vercel, Firebase)
+  2. Seguridad y reglas de Firestore (control de acceso, validaciones cliente/servidor, proteccion de claves)
+  3. Calidad del codigo TypeScript (tipado estricto, modularidad, patrones de diseno)
+  4. Manejo de estado, contexto, hooks y ciclo de vida de React
+  5. Manejo de errores y resiliencia en llamadas asincronas
+  6. Rendimiento, buenas practicas y potenciales vulnerabilidades o bugs
+
+NOTA DE SEGURIDAD:
+Los archivos de entorno reales (.env / .env.local) que contienen claves secretas privadas
+(como AWS_SECRET_ACCESS_KEY y FIREBASE_PRIVATE_KEY) fueron deliberadamente omitidos
+por seguridad. Se incluye .env.example con la definicion de las variables esperadas.
+Archivos binarios (como imagenes .png/.svg) y el archivo generado package-lock.json
+fueron excluidos para mantener el archivo optimizado.
+
+================================================================================
+INDICE GENERAL DE ARCHIVOS POR CATEGORIA
+================================================================================
+
+[CONFIGURACION E INFRAESTRUCTURA]
+  01. package.json
+  02. vite.config.ts
+  03. tsconfig.json
+  04. tsconfig.app.json
+  05. tsconfig.node.json
+  06. vercel.json
+  07. firestore.rules
+  08. .oxlintrc.json
+  09. .env.example
+  10. .gitignore
+  11. index.html
+  12. README.md
+
+[API & BACKEND / SERVERLESS]
+  13. api/send-summary.ts
+  14. server/email.ts
+  15. server/firebaseAdmin.ts
+
+[TIPOS E INTERFACES (TYPESCRIPT TYPES)]
+  16. src/types/auth.types.ts
+  17. src/types/task.types.ts
+  18. src/vite-env.d.ts
+
+[SERVICIOS DE FIREBASE Y EMAIL]
+  19. src/services/firebase.ts
+  20. src/services/emailService.ts
+
+[UTILIDADES, VALIDACIONES Y MANEJO DE ERRORES]
+  21. src/utils/validateAuth.ts
+  22. src/utils/validateTask.ts
+  23. src/utils/firebaseErrors.ts
+  24. src/utils/taskErrors.ts
+  25. src/utils/taskParser.ts
+
+[LOGICA DE NEGOCIO Y ESTADO (FEATURES)]
+  26. src/features/auth/AuthContext.ts
+  27. src/features/auth/authService.ts
+  28. src/features/auth/Authenticator.tsx
+  29. src/features/tasks/taskService.ts
+
+[CUSTOM HOOKS]
+  30. src/hooks/useAuth.ts
+  31. src/hooks/useTasks.ts
+
+[RUTAS (ROUTING Y PROTECCION)]
+  32. src/routes/ProtectedRoute.tsx
+  33. src/routes/PublicRoute.tsx
+
+[PAGINAS (PAGES / VISTAS)]
+  34. src/pages/LoginPage.tsx
+  35. src/pages/RegisterPage.tsx
+  36. src/pages/TasksPage.tsx
+
+[COMPONENTES DE UI]
+  37. src/components/AppLayout.tsx
+  38. src/components/AuthForm.tsx
+  39. src/components/FormField.tsx
+  40. src/components/TodoForm.tsx
+  41. src/components/TodoItem.tsx
+  42. src/components/TodoList.tsx
+  43. src/components/SendSummaryButton.tsx
+
+[PUNTO DE ENTRADA Y ESTILOS]
+  44. src/main.tsx
+  45. src/App.tsx
+  46. src/App.css
+  47. src/index.css
+
+================================================================================
+CONTENIDO DE ARCHIVOS
+================================================================================
+
+
+################################################################################
+### CATEGORIA: CONFIGURACION E INFRAESTRUCTURA
+################################################################################
+
+================================================================================
+ARCHIVO #01: package.json
+UBICACION RELATIVA: package.json
+CATEGORIA: Configuracion e Infraestructura
+LENGUAJE: JSON (.json)
+LINEAS: 42 | TAMANO: 898 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: package.json >>>
+{
+  "name": "matecode",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "dev:full": "vercel dev"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ses": "^3.1171.0",
+    "@aws-sdk/client-sesv2": "^3.1171.0",
+    "firebase": "^13.4.0",
+    "firebase-admin": "^14.5.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vercel/node": "^31.0.2",
+    "@vitejs/plugin-react": "^6.1.2",
+    "oxlint": "^1.90.0",
+    "typescript": "~7.0.2",
+    "vercel": "58.11.0",
+    "vite": "^8.3.6"
+  },
+  "overrides": {
+    "jwks-rsa": {
+      "jose": "5.10.0"
+    }
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}
+
+<<< FIN DEL ARCHIVO: package.json >>>
+
+
+================================================================================
+ARCHIVO #02: vite.config.ts
+UBICACION RELATIVA: vite.config.ts
+CATEGORIA: Configuracion e Infraestructura
+LENGUAJE: TypeScript (.ts)
+LINEAS: 8 | TAMANO: 161 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: vite.config.ts >>>
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+})
+
+<<< FIN DEL ARCHIVO: vite.config.ts >>>
+
+
+================================================================================
+ARCHIVO #03: tsconfig.json
+UBICACION RELATIVA: tsconfig.json
+CATEGORIA: Configuracion e Infraestructura
+LENGUAJE: JSON (.json)
+LINEAS: 8 | TAMANO: 119 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: tsconfig.json >>>
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
+
+<<< FIN DEL ARCHIVO: tsconfig.json >>>
+
+
+================================================================================
+ARCHIVO #04: tsconfig.app.json
+UBICACION RELATIVA: tsconfig.app.json
+CATEGORIA: Configuracion e Infraestructura
+LENGUAJE: JSON (.json)
+LINEAS: 27 | TAMANO: 655 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: tsconfig.app.json >>>
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "esnext",
+    "types": ["vite/client"],
+    "allowArbitraryExtensions": true,
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"]
+}
+
+<<< FIN DEL ARCHIVO: tsconfig.app.json >>>
+
+
+================================================================================
+ARCHIVO #05: tsconfig.node.json
+UBICACION RELATIVA: tsconfig.node.json
+CATEGORIA: Configuracion e Infraestructura
+LENGUAJE: JSON (.json)
+LINEAS: 27 | TAMANO: 560 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: tsconfig.node.json >>>
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "ES2023",
+    "lib": [
+      "ES2023"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": [
+      "node"
+    ],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": [
+    "vite.config.ts",
+    "api",
+    "server"
+  ]
+}
+
+<<< FIN DEL ARCHIVO: tsconfig.node.json >>>
+
+
+================================================================================
+ARCHIVO #06: vercel.json
+UBICACION RELATIVA: vercel.json
+CATEGORIA: Configuracion e Infraestructura
+LENGUAJE: JSON (.json)
+LINEAS: 12 | TAMANO: 293 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: vercel.json >>>
+{
+    "$schema": "https://openapi.vercel.sh/vercel.json",
+    "framework": "vite",
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
+    "rewrites": [
+        {
+            "source": "/((?!api(?:/|$)).*)",
+            "destination": "/index.html"
+        }
+    ]
+}
+
+<<< FIN DEL ARCHIVO: vercel.json >>>
+
+
+================================================================================
+ARCHIVO #07: firestore.rules
+UBICACION RELATIVA: firestore.rules
+CATEGORIA: Configuracion e Infraestructura
+LENGUAJE: Firestore Security Rules (.rules)
+LINEAS: 1 | TAMANO: 0 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: firestore.rules >>>
+
+
+<<< FIN DEL ARCHIVO: firestore.rules >>>
+
+
+================================================================================
+ARCHIVO #08: .oxlintrc.json
+UBICACION RELATIVA: .oxlintrc.json
+CATEGORIA: Configuracion e Infraestructura
+LENGUAJE: JSON (.json)
+LINEAS: 9 | TAMANO: 245 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: .oxlintrc.json >>>
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+  }
+}
+
+<<< FIN DEL ARCHIVO: .oxlintrc.json >>>
+
+
+================================================================================
+ARCHIVO #09: .env.example
+UBICACION RELATIVA: .env.example
+CATEGORIA: Configuracion e Infraestructura
+LENGUAJE: Environment Variables Config (.env)
+LINEAS: 16 | TAMANO: 349 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: .env.example >>>
+# Configuración pública de Firebase
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_APP_ID=
+
+# Firebase Admin: solo servidor
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
+
+# AWS SES: solo servidor
+AWS_REGION=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_SES_FROM_EMAIL=
+
+<<< FIN DEL ARCHIVO: .env.example >>>
+
+
+================================================================================
+ARCHIVO #10: .gitignore
+UBICACION RELATIVA: .gitignore
+CATEGORIA: Configuracion e Infraestructura
+LENGUAJE: Text / Config
+LINEAS: 11 | TAMANO: 83 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: .gitignore >>>
+node_modules/
+dist/
+coverage/
+
+.env
+.env.*
+!.env.example
+.vercel/
+.vercel
+.env*
+
+<<< FIN DEL ARCHIVO: .gitignore >>>
+
+
+================================================================================
+ARCHIVO #11: index.html
+UBICACION RELATIVA: index.html
+CATEGORIA: Configuracion e Infraestructura
+LENGUAJE: HTML (.html)
+LINEAS: 14 | TAMANO: 360 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: index.html >>>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>matecode</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
+<<< FIN DEL ARCHIVO: index.html >>>
+
+
+================================================================================
+ARCHIVO #12: README.md
+UBICACION RELATIVA: README.md
+CATEGORIA: Configuracion e Infraestructura
+LENGUAJE: Markdown (.md)
+LINEAS: 33 | TAMANO: 1278 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: README.md >>>
+# React + TypeScript + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the Oxlint configuration
+
+If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+
+```json
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "options": {
+    "typeAware": true
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+  }
+}
+```
+
+See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+
+<<< FIN DEL ARCHIVO: README.md >>>
+
+
+
+################################################################################
+### CATEGORIA: API & BACKEND / SERVERLESS
+################################################################################
+
+================================================================================
+ARCHIVO #13: api/send-summary.ts
+UBICACION RELATIVA: api/send-summary.ts
+CATEGORIA: API & Backend / Serverless
+LENGUAJE: TypeScript (.ts)
+LINEAS: 178 | TAMANO: 5036 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: api/send-summary.ts >>>
+import type {
+    VercelRequest,
+    VercelResponse,
+} from '@vercel/node';
+
+import { getAdminServices } from '../server/firebaseAdmin.js';
+import { sendSummaryEmail } from '../server/email.js';
+import { parseTask } from '../src/utils/taskParser.js';
+
+class RateLimitError extends Error { }
+
+export default async function handler(
+    req: VercelRequest,
+    res: VercelResponse,
+) {
+    res.setHeader('Cache-Control', 'no-store');
+
+    if (req.method !== 'POST') {
+        res.setHeader('Allow', 'POST');
+
+        return res.status(405).json({
+            message: 'Usá POST para solicitar el resumen.',
+        });
+    }
+
+    const contentType = req.headers['content-type']
+        ?.split(';')[0]
+        ?.trim()
+        .toLowerCase();
+
+    if (contentType !== 'application/json') {
+        return res.status(415).json({
+            message: 'La solicitud debe usar application/json.',
+        });
+    }
+
+    const authorization = req.headers.authorization;
+
+    if (
+        !authorization?.startsWith('Bearer ') ||
+        !authorization.slice(7).trim()
+    ) {
+        return res.status(401).json({
+            message: 'Necesitás iniciar sesión.',
+        });
+    }
+
+    let body: unknown = req.body;
+
+    if (typeof body === 'string') {
+        try {
+            body = JSON.parse(body);
+        } catch {
+            return res.status(400).json({
+                message: 'El JSON recibido es inválido.',
+            });
+        }
+    }
+
+    if (
+        !body ||
+        typeof body !== 'object' ||
+        Array.isArray(body) ||
+        Object.keys(body).length !== 0
+    ) {
+        return res.status(400).json({
+            message: 'El cuerpo de la solicitud debe ser {}.',
+        });
+    }
+
+    try {
+        const { auth, db } = getAdminServices();
+
+        const token = authorization.slice(7).trim();
+
+        const decoded = await auth
+            .verifyIdToken(token)
+            .catch(() => null);
+
+        if (!decoded) {
+            return res.status(401).json({
+                message: 'La sesión es inválida o está vencida.',
+            });
+        }
+
+        if (!decoded.email || !decoded.email_verified) {
+            return res.status(403).json({
+                message:
+                    'Verificá tu correo en Firebase antes de enviar el resumen.',
+            });
+        }
+
+        // Admin SDK omite las reglas de Firestore.
+        // Este filtro por el UID verificado es obligatorio.
+        const snapshot = await db
+            .collection('tasks')
+            .where('userId', '==', decoded.uid)
+            .get();
+
+        const tasks = snapshot.docs.map(document =>
+            parseTask(document.id, document.data()),
+        );
+
+        if (tasks.some(task => task.userId !== decoded.uid)) {
+            throw new Error('Se encontró un propietario inválido.');
+        }
+
+        tasks.sort((a, b) => b.createdAt - a.createdAt);
+
+        const limitReference = db
+            .collection('_emailLimits')
+            .doc(decoded.uid);
+
+        await db.runTransaction(async transaction => {
+            const previous = await transaction.get(limitReference);
+
+            const lastAttempt: unknown =
+                previous.data()?.lastAttempt;
+
+            const now = Date.now();
+
+            if (
+                typeof lastAttempt === 'number' &&
+                now - lastAttempt < 60_000
+            ) {
+                throw new RateLimitError();
+            }
+
+            transaction.set(limitReference, {
+                lastAttempt: now,
+            });
+        });
+
+        const messageId = await sendSummaryEmail(
+            decoded.email,
+            tasks,
+        );
+
+        return res.status(200).json({
+            message:
+                'AWS SES aceptó el resumen. Revisá tu bandeja de entrada y spam.',
+            messageId,
+        });
+    } catch (error) {
+        if (error instanceof RateLimitError) {
+            res.setHeader('Retry-After', '60');
+
+            return res.status(429).json({
+                message:
+                    'Esperá un minuto entre intentos de envío.',
+            });
+        }
+
+        console.error('Error en send-summary:', {
+            name: error instanceof Error
+                ? error.name
+                : 'UnknownError',
+            message: error instanceof Error
+                ? error.message
+                : 'Error desconocido',
+        });
+
+        if (
+            error instanceof Error &&
+            error.name === 'MessageRejected'
+        ) {
+            return res.status(422).json({
+                message:
+                    'SES rechazó el envío. Revisá las identidades verificadas y la región de AWS.',
+            });
+        }
+
+        return res.status(500).json({
+            message:
+                'No se pudo enviar el resumen. Revisá la terminal del servidor.',
+        });
+    }
+}
+
+<<< FIN DEL ARCHIVO: api/send-summary.ts >>>
+
+
+================================================================================
+ARCHIVO #14: server/email.ts
+UBICACION RELATIVA: server/email.ts
+CATEGORIA: API & Backend / Serverless
+LENGUAJE: TypeScript (.ts)
+LINEAS: 122 | TAMANO: 3281 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: server/email.ts >>>
+import {
+    SESv2Client,
+    SendEmailCommand,
+} from '@aws-sdk/client-sesv2';
+
+import type { Task } from '../src/types/task.types.js';
+
+export function escapeHtml(value: string): string {
+    const replacements: Record<string, string> = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    };
+
+    return value.replace(
+        /[&<>"']/g,
+        character => replacements[character] ?? character,
+    );
+}
+
+export function buildTaskSummary(tasks: Task[]) {
+    const completed = tasks.filter(task => task.completed).length;
+    const pending = tasks.length - completed;
+
+    const summary =
+        `Total: ${tasks.length} | ` +
+        `Completadas: ${completed} | ` +
+        `Pendientes: ${pending}`;
+
+    const lines = tasks.map(task => {
+        const state = task.completed
+            ? '[Completada]'
+            : '[Pendiente]';
+
+        return (
+            `${state} ${task.title}` +
+            (task.description ? ` — ${task.description}` : '')
+        );
+    });
+
+    return {
+        subject: `MateCode: resumen de tareas (${pending} pendientes)`,
+
+        text:
+            `${summary}\n\n` +
+            (lines.join('\n') || 'No tenés tareas cargadas.'),
+
+        html:
+            '<h1>Tu resumen de MateCode</h1>' +
+            `<p>${summary}</p>` +
+            '<ul>' +
+            lines
+                .map(line => `<li>${escapeHtml(line)}</li>`)
+                .join('') +
+            '</ul>' +
+            (tasks.length
+                ? ''
+                : '<p>No tenés tareas cargadas.</p>'),
+    };
+}
+
+export async function sendSummaryEmail(
+    recipient: string,
+    tasks: Task[],
+): Promise<string | undefined> {
+    const region = process.env.AWS_REGION;
+    const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+    const fromEmail = process.env.AWS_SES_FROM_EMAIL;
+
+    if (
+        !region ||
+        !accessKeyId ||
+        !secretAccessKey ||
+        !fromEmail
+    ) {
+        throw new Error(
+            'Faltan variables de entorno de AWS SES.',
+        );
+    }
+
+    const client = new SESv2Client({
+        region,
+        credentials: {
+            accessKeyId,
+            secretAccessKey,
+        },
+    });
+
+    const content = buildTaskSummary(tasks);
+
+    const result = await client.send(
+        new SendEmailCommand({
+            FromEmailAddress: fromEmail,
+            Destination: {
+                ToAddresses: [recipient],
+            },
+            Content: {
+                Simple: {
+                    Subject: {
+                        Data: content.subject,
+                        Charset: 'UTF-8',
+                    },
+                    Body: {
+                        Text: {
+                            Data: content.text,
+                            Charset: 'UTF-8',
+                        },
+                        Html: {
+                            Data: content.html,
+                            Charset: 'UTF-8',
+                        },
+                    },
+                },
+            },
+        }),
+    );
+
+    return result.MessageId;
+}
+
+<<< FIN DEL ARCHIVO: server/email.ts >>>
+
+
+================================================================================
+ARCHIVO #15: server/firebaseAdmin.ts
+UBICACION RELATIVA: server/firebaseAdmin.ts
+CATEGORIA: API & Backend / Serverless
+LENGUAJE: TypeScript (.ts)
+LINEAS: 41 | TAMANO: 1022 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: server/firebaseAdmin.ts >>>
+import {
+    cert,
+    getApps,
+    initializeApp,
+} from 'firebase-admin/app';
+
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
+
+export function getAdminServices() {
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY
+        ?.replace(/\\n/g, '\n');
+
+    if (!projectId || !clientEmail || !privateKey) {
+        throw new Error(
+            'Faltan variables de entorno de Firebase Admin.',
+        );
+    }
+
+    const app =
+        getApps().find(item => item.name === 'matecode-server') ??
+        initializeApp(
+            {
+                credential: cert({
+                    projectId,
+                    clientEmail,
+                    privateKey,
+                }),
+                projectId,
+            },
+            'matecode-server',
+        );
+
+    return {
+        auth: getAuth(app),
+        db: getFirestore(app),
+    };
+}
+
+<<< FIN DEL ARCHIVO: server/firebaseAdmin.ts >>>
+
+
+
+################################################################################
+### CATEGORIA: TIPOS E INTERFACES (TYPESCRIPT TYPES)
+################################################################################
+
+================================================================================
+ARCHIVO #16: src/types/auth.types.ts
+UBICACION RELATIVA: src/types/auth.types.ts
+CATEGORIA: Tipos e Interfaces (TypeScript Types)
+LENGUAJE: TypeScript (.ts)
+LINEAS: 12 | TAMANO: 241 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/types/auth.types.ts >>>
+import type { User } from 'firebase/auth';
+
+export interface AuthContextValue {
+    user: User | null;
+    loading: boolean;
+    error: string | null;
+}
+
+export interface AuthFormValues {
+    email: string;
+    password: string;
+}
+
+<<< FIN DEL ARCHIVO: src/types/auth.types.ts >>>
+
+
+================================================================================
+ARCHIVO #17: src/types/task.types.ts
+UBICACION RELATIVA: src/types/task.types.ts
+CATEGORIA: Tipos e Interfaces (TypeScript Types)
+LENGUAJE: TypeScript (.ts)
+LINEAS: 20 | TAMANO: 417 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/types/task.types.ts >>>
+export interface Task {
+    id: string;
+    userId: string;
+    title: string;
+    description: string;
+    completed: boolean;
+    createdAt: number;
+    updatedAt: number;
+}
+
+export interface TaskFormValues {
+    title: string;
+    description: string;
+}
+
+export type TaskFormErrors = Partial<
+    Record<keyof TaskFormValues, string>
+>;
+
+export type TaskFilter = 'all' | 'pending' | 'completed';
+
+<<< FIN DEL ARCHIVO: src/types/task.types.ts >>>
+
+
+================================================================================
+ARCHIVO #18: src/vite-env.d.ts
+UBICACION RELATIVA: src/vite-env.d.ts
+CATEGORIA: Tipos e Interfaces (TypeScript Types)
+LENGUAJE: TypeScript (.ts)
+LINEAS: 8 | TAMANO: 255 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/vite-env.d.ts >>>
+/// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+    readonly VITE_FIREBASE_API_KEY: string;
+    readonly VITE_FIREBASE_AUTH_DOMAIN: string;
+    readonly VITE_FIREBASE_PROJECT_ID: string;
+    readonly VITE_FIREBASE_APP_ID: string;
+}
+
+<<< FIN DEL ARCHIVO: src/vite-env.d.ts >>>
+
+
+
+################################################################################
+### CATEGORIA: SERVICIOS DE FIREBASE Y EMAIL
+################################################################################
+
+================================================================================
+ARCHIVO #19: src/services/firebase.ts
+UBICACION RELATIVA: src/services/firebase.ts
+CATEGORIA: Servicios de Firebase y Email
+LENGUAJE: TypeScript (.ts)
+LINEAS: 33 | TAMANO: 841 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/services/firebase.ts >>>
+import {
+    getApp,
+    getApps,
+    initializeApp,
+} from 'firebase/app';
+
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+
+const firebaseConfig = {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+};
+
+const missingVariables = Object.entries(firebaseConfig)
+    .filter(([, value]) => !value?.trim())
+    .map(([key]) => key);
+
+if (missingVariables.length > 0) {
+    throw new Error(
+        `Falta configurar Firebase en .env: ${missingVariables.join(', ')}`,
+    );
+}
+
+const app = getApps().length > 0
+    ? getApp()
+    : initializeApp(firebaseConfig);
+
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+
+<<< FIN DEL ARCHIVO: src/services/firebase.ts >>>
+
+
+================================================================================
+ARCHIVO #20: src/services/emailService.ts
+UBICACION RELATIVA: src/services/emailService.ts
+CATEGORIA: Servicios de Firebase y Email
+LENGUAJE: TypeScript (.ts)
+LINEAS: 65 | TAMANO: 1593 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/services/emailService.ts >>>
+import { sendEmailVerification } from 'firebase/auth';
+import { auth } from './firebase';
+
+interface SummaryResponse {
+    message: string;
+}
+
+export async function requestEmailVerification(): Promise<void> {
+    const user = auth.currentUser;
+
+    if (!user) {
+        throw new Error('Necesitás iniciar sesión.');
+    }
+
+    await sendEmailVerification(user);
+}
+
+export async function sendTasksSummaryEmail(): Promise<SummaryResponse> {
+    const user = auth.currentUser;
+
+    if (!user) {
+        throw new Error('Necesitás iniciar sesión.');
+    }
+
+    await user.reload();
+
+    const token = await user.getIdToken(true);
+
+    const response = await fetch('/api/send-summary', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+        signal: AbortSignal.timeout(30_000),
+    });
+
+    const data: unknown = await response
+        .json()
+        .catch(() => null);
+
+    const message =
+        data &&
+            typeof data === 'object' &&
+            'message' in data &&
+            typeof data.message === 'string'
+            ? data.message
+            : 'El servidor devolvió una respuesta inválida.';
+
+    if (!response.ok) {
+        throw new Error(message);
+    }
+
+    if (
+        !data ||
+        typeof data !== 'object' ||
+        !('message' in data) ||
+        typeof data.message !== 'string'
+    ) {
+        throw new Error(message);
+    }
+
+    return { message };
+}
+
+<<< FIN DEL ARCHIVO: src/services/emailService.ts >>>
+
+
+
+################################################################################
+### CATEGORIA: UTILIDADES, VALIDACIONES Y MANEJO DE ERRORES
+################################################################################
+
+================================================================================
+ARCHIVO #21: src/utils/validateAuth.ts
+UBICACION RELATIVA: src/utils/validateAuth.ts
+CATEGORIA: Utilidades, Validaciones y Manejo de Errores
+LENGUAJE: TypeScript (.ts)
+LINEAS: 35 | TAMANO: 975 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/utils/validateAuth.ts >>>
+import type { AuthFormValues } from '../types/auth.types';
+
+export interface AuthFormErrors {
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+}
+
+export function validateAuth(
+    values: AuthFormValues,
+    isRegister: boolean,
+    confirmPassword: string,
+): AuthFormErrors {
+    const errors: AuthFormErrors = {};
+
+    const email = values.email.trim();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailPattern.test(email)) {
+        errors.email = 'Ingresá un correo electrónico válido.';
+    }
+
+    if (!values.password) {
+        errors.password = 'Ingresá tu contraseña.';
+    } else if (isRegister && values.password.length < 6) {
+        errors.password =
+            'La contraseña debe tener al menos 6 caracteres.';
+    }
+
+    if (isRegister && confirmPassword !== values.password) {
+        errors.confirmPassword = 'Las contraseñas no coinciden.';
+    }
+
+    return errors;
+}
+
+<<< FIN DEL ARCHIVO: src/utils/validateAuth.ts >>>
+
+
+================================================================================
+ARCHIVO #22: src/utils/validateTask.ts
+UBICACION RELATIVA: src/utils/validateTask.ts
+CATEGORIA: Utilidades, Validaciones y Manejo de Errores
+LENGUAJE: TypeScript (.ts)
+LINEAS: 23 | TAMANO: 586 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/utils/validateTask.ts >>>
+import type {
+    TaskFormErrors,
+    TaskFormValues,
+} from '../types/task.types';
+
+export function validateTask(
+    values: TaskFormValues,
+): TaskFormErrors {
+    const errors: TaskFormErrors = {};
+
+    if (!values.title.trim()) {
+        errors.title = 'El título es obligatorio.';
+    } else if (values.title.length > 100) {
+        errors.title = 'El título admite hasta 100 caracteres.';
+    }
+
+    if (values.description.length > 300) {
+        errors.description =
+            'La descripción admite hasta 300 caracteres.';
+    }
+
+    return errors;
+}
+
+<<< FIN DEL ARCHIVO: src/utils/validateTask.ts >>>
+
+
+================================================================================
+ARCHIVO #23: src/utils/firebaseErrors.ts
+UBICACION RELATIVA: src/utils/firebaseErrors.ts
+CATEGORIA: Utilidades, Validaciones y Manejo de Errores
+LENGUAJE: TypeScript (.ts)
+LINEAS: 56 | TAMANO: 1809 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/utils/firebaseErrors.ts >>>
+import { FirebaseError } from 'firebase/app';
+
+const messages: Record<string, string> = {
+    'auth/invalid-credential':
+        'El correo o la contraseña son incorrectos.',
+
+    'auth/user-not-found':
+        'El correo o la contraseña son incorrectos.',
+
+    'auth/wrong-password':
+        'El correo o la contraseña son incorrectos.',
+
+    'auth/email-already-in-use':
+        'Ya existe una cuenta con este correo electrónico.',
+
+    'auth/invalid-email':
+        'Ingresá un correo electrónico válido.',
+
+    'auth/weak-password':
+        'La contraseña debe tener al menos 6 caracteres.',
+
+    'auth/too-many-requests':
+        'Hubo demasiados intentos. Esperá un momento y volvé a intentar.',
+
+    'auth/network-request-failed':
+        'No se pudo conectar con Firebase. Revisá tu conexión.',
+
+    'auth/popup-closed-by-user':
+        'Cerraste la ventana de Google antes de terminar.',
+
+    'auth/popup-blocked':
+        'El navegador bloqueó la ventana de Google. Permití las ventanas emergentes para este sitio.',
+
+    'auth/cancelled-popup-request':
+        'Ya hay una operación de acceso con Google en curso.',
+
+    'auth/unauthorized-domain':
+        'Este dominio todavía no está autorizado en Firebase Authentication.',
+
+    'auth/operation-not-allowed':
+        'Este método de acceso todavía no está habilitado en Firebase.',
+
+    'auth/user-disabled':
+        'Esta cuenta está deshabilitada.',
+};
+
+export function getAuthErrorMessage(error: unknown): string {
+    if (error instanceof FirebaseError) {
+        return (
+            messages[error.code] ??
+            'No se pudo completar la operación. Intentá nuevamente.'
+        );
+    }
+
+    return 'Ocurrió un error inesperado. Intentá nuevamente.';
+}
+
+<<< FIN DEL ARCHIVO: src/utils/firebaseErrors.ts >>>
+
+
+================================================================================
+ARCHIVO #24: src/utils/taskErrors.ts
+UBICACION RELATIVA: src/utils/taskErrors.ts
+CATEGORIA: Utilidades, Validaciones y Manejo de Errores
+LENGUAJE: TypeScript (.ts)
+LINEAS: 32 | TAMANO: 873 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/utils/taskErrors.ts >>>
+import { FirebaseError } from 'firebase/app';
+
+const messages: Record<string, string> = {
+    'permission-denied':
+        'Tu cuenta no tiene permiso para realizar esta operación.',
+
+    unauthenticated:
+        'Necesitás iniciar sesión para gestionar tus tareas.',
+
+    unavailable:
+        'No se pudo conectar con Firestore. Revisá tu conexión.',
+
+    'failed-precondition':
+        'Es necesario revisar la configuración de Firestore.',
+};
+
+export function getTaskErrorMessage(
+    error: unknown,
+): string {
+    if (error instanceof FirebaseError) {
+        return (
+            messages[error.code] ??
+            'No se pudo completar la operación con Firestore.'
+        );
+    }
+
+    if (error instanceof Error) {
+        return error.message;
+    }
+
+    return 'No se pudo completar la operación. Intentá nuevamente.';
+}
+
+<<< FIN DEL ARCHIVO: src/utils/taskErrors.ts >>>
+
+
+================================================================================
+ARCHIVO #25: src/utils/taskParser.ts
+UBICACION RELATIVA: src/utils/taskParser.ts
+CATEGORIA: Utilidades, Validaciones y Manejo de Errores
+LENGUAJE: TypeScript (.ts)
+LINEAS: 62 | TAMANO: 1466 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/utils/taskParser.ts >>>
+import type { Task } from '../types/task.types';
+import { validateTask } from './validateTask.js';
+
+export function parseTask(
+    id: string,
+    raw: unknown,
+): Task {
+    if (
+        !raw ||
+        typeof raw !== 'object' ||
+        Array.isArray(raw)
+    ) {
+        throw new Error('Hay una tarea con formato inválido.');
+    }
+
+    const data = raw as Record<string, unknown>;
+
+    const {
+        userId,
+        title,
+        description,
+        completed,
+        createdAt,
+        updatedAt,
+    } = data;
+
+    if (
+        typeof userId !== 'string' ||
+        !userId ||
+        typeof title !== 'string' ||
+        typeof description !== 'string' ||
+        typeof completed !== 'boolean' ||
+        typeof createdAt !== 'number' ||
+        !Number.isSafeInteger(createdAt) ||
+        createdAt < 0 ||
+        typeof updatedAt !== 'number' ||
+        !Number.isSafeInteger(updatedAt) ||
+        updatedAt < createdAt
+    ) {
+        throw new Error(
+            'Hay una tarea con datos incompatibles en Firestore.',
+        );
+    }
+
+    const errors = validateTask({ title, description });
+
+    if (errors.title || errors.description) {
+        throw new Error(
+            'Hay una tarea que no cumple las validaciones.',
+        );
+    }
+
+    return {
+        id,
+        userId,
+        title,
+        description,
+        completed,
+        createdAt,
+        updatedAt,
+    };
+}
+
+<<< FIN DEL ARCHIVO: src/utils/taskParser.ts >>>
+
+
+
+################################################################################
+### CATEGORIA: LOGICA DE NEGOCIO Y ESTADO (FEATURES)
+################################################################################
+
+================================================================================
+ARCHIVO #26: src/features/auth/AuthContext.ts
+UBICACION RELATIVA: src/features/auth/AuthContext.ts
+CATEGORIA: Logica de Negocio y Estado (Features)
+LENGUAJE: TypeScript (.ts)
+LINEAS: 6 | TAMANO: 188 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/features/auth/AuthContext.ts >>>
+import { createContext } from 'react';
+import type { AuthContextValue } from '../../types/auth.types';
+
+export const AuthContext = createContext<AuthContextValue | null>(
+    null,
+);
+
+<<< FIN DEL ARCHIVO: src/features/auth/AuthContext.ts >>>
+
+
+================================================================================
+ARCHIVO #27: src/features/auth/authService.ts
+UBICACION RELATIVA: src/features/auth/authService.ts
+CATEGORIA: Logica de Negocio y Estado (Features)
+LENGUAJE: TypeScript (.ts)
+LINEAS: 46 | TAMANO: 1036 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/features/auth/authService.ts >>>
+import {
+    createUserWithEmailAndPassword,
+    GoogleAuthProvider,
+    signInWithEmailAndPassword,
+    signInWithPopup,
+    signOut,
+} from 'firebase/auth';
+
+import { auth } from '../../services/firebase';
+import type { AuthFormValues } from '../../types/auth.types';
+
+const googleProvider = new GoogleAuthProvider();
+
+googleProvider.setCustomParameters({
+    prompt: 'select_account',
+});
+
+export async function registerWithEmail({
+    email,
+    password,
+}: AuthFormValues): Promise<void> {
+    await createUserWithEmailAndPassword(
+        auth,
+        email.trim(),
+        password,
+    );
+}
+
+export async function loginWithEmail({
+    email,
+    password,
+}: AuthFormValues): Promise<void> {
+    await signInWithEmailAndPassword(
+        auth,
+        email.trim(),
+        password,
+    );
+}
+
+export async function loginWithGoogle(): Promise<void> {
+    await signInWithPopup(auth, googleProvider);
+}
+
+export async function logoutUser(): Promise<void> {
+    await signOut(auth);
+}
+
+<<< FIN DEL ARCHIVO: src/features/auth/authService.ts >>>
+
+
+================================================================================
+ARCHIVO #28: src/features/auth/Authenticator.tsx
+UBICACION RELATIVA: src/features/auth/Authenticator.tsx
+CATEGORIA: Logica de Negocio y Estado (Features)
+LENGUAJE: TypeScript React (.tsx)
+LINEAS: 62 | TAMANO: 1508 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/features/auth/Authenticator.tsx >>>
+import {
+    useEffect,
+    useMemo,
+    useState,
+    type ReactNode,
+} from 'react';
+
+import {
+    onAuthStateChanged,
+    type User,
+} from 'firebase/auth';
+
+import { auth } from '../../services/firebase';
+import { AuthContext } from './AuthContext';
+import type { AuthContextValue } from '../../types/auth.types';
+
+interface AuthenticatorProps {
+    children: ReactNode;
+}
+
+export function Authenticator({
+    children,
+}: AuthenticatorProps) {
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(
+            auth,
+            currentUser => {
+                setUser(currentUser);
+                setError(null);
+                setLoading(false);
+            },
+            () => {
+                setUser(null);
+                setError(
+                    'No se pudo comprobar la sesión. Revisá tu conexión e intentá nuevamente.',
+                );
+                setLoading(false);
+            },
+        );
+
+        return unsubscribe;
+    }, []);
+
+    const value = useMemo<AuthContextValue>(
+        () => ({
+            user,
+            loading,
+            error,
+        }),
+        [user, loading, error],
+    );
+
+    return (
+        <AuthContext.Provider value={value}>
+            {children}
+        </AuthContext.Provider>
+    );
+}
+
+<<< FIN DEL ARCHIVO: src/features/auth/Authenticator.tsx >>>
+
+
+================================================================================
+ARCHIVO #29: src/features/tasks/taskService.ts
+UBICACION RELATIVA: src/features/tasks/taskService.ts
+CATEGORIA: Logica de Negocio y Estado (Features)
+LENGUAJE: TypeScript (.ts)
+LINEAS: 141 | TAMANO: 3380 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/features/tasks/taskService.ts >>>
+import {
+    addDoc,
+    collection,
+    deleteDoc,
+    doc,
+    onSnapshot,
+    query,
+    updateDoc,
+    where,
+    type Unsubscribe,
+} from 'firebase/firestore';
+
+import { db } from '../../services/firebase';
+
+import type {
+    Task,
+    TaskFormValues,
+} from '../../types/task.types';
+
+import { validateTask } from '../../utils/validateTask';
+import { parseTask } from '../../utils/taskParser';
+
+const COLLECTION_NAME = 'tasks';
+
+function getValidatedValues(
+    values: TaskFormValues,
+): TaskFormValues {
+    const errors = validateTask(values);
+
+    if (errors.title || errors.description) {
+        throw new Error(
+            errors.title ??
+            errors.description ??
+            'Los datos de la tarea son inválidos.',
+        );
+    }
+
+    return {
+        title: values.title.trim(),
+        description: values.description.trim(),
+    };
+}
+
+export function subscribeToUserTasks(
+    userId: string,
+    onData: (tasks: Task[]) => void,
+    onError: (error: Error) => void,
+): Unsubscribe {
+    const userTasksQuery = query(
+        collection(db, COLLECTION_NAME),
+        where('userId', '==', userId),
+    );
+
+    return onSnapshot(
+        userTasksQuery,
+        snapshot => {
+            try {
+                const tasks = snapshot.docs.map(document =>
+                    parseTask(document.id, document.data()),
+                );
+
+                if (tasks.some(task => task.userId !== userId)) {
+                    throw new Error(
+                        'Se recibió una tarea con un propietario inválido.',
+                    );
+                }
+
+                tasks.sort(
+                    (a, b) =>
+                        b.createdAt - a.createdAt ||
+                        a.id.localeCompare(b.id),
+                );
+
+                onData(tasks);
+            } catch (error) {
+                onError(
+                    error instanceof Error
+                        ? error
+                        : new Error('No se pudieron leer las tareas.'),
+                );
+            }
+        },
+        onError,
+    );
+}
+
+export async function createTask(
+    userId: string,
+    values: TaskFormValues,
+): Promise<void> {
+    if (!userId) {
+        throw new Error('Necesitás iniciar sesión.');
+    }
+
+    const validatedValues = getValidatedValues(values);
+    const now = Date.now();
+
+    await addDoc(collection(db, COLLECTION_NAME), {
+        userId,
+        ...validatedValues,
+        completed: false,
+        createdAt: now,
+        updatedAt: now,
+    });
+}
+
+export async function updateTask(
+    taskId: string,
+    values: TaskFormValues,
+): Promise<void> {
+    const validatedValues = getValidatedValues(values);
+
+    await updateDoc(
+        doc(db, COLLECTION_NAME, taskId),
+        {
+            ...validatedValues,
+            updatedAt: Date.now(),
+        },
+    );
+}
+
+export async function setTaskCompleted(
+    taskId: string,
+    completed: boolean,
+): Promise<void> {
+    await updateDoc(
+        doc(db, COLLECTION_NAME, taskId),
+        {
+            completed,
+            updatedAt: Date.now(),
+        },
+    );
+}
+
+export async function deleteTask(
+    taskId: string,
+): Promise<void> {
+    await deleteDoc(
+        doc(db, COLLECTION_NAME, taskId),
+    );
+}
+
+<<< FIN DEL ARCHIVO: src/features/tasks/taskService.ts >>>
+
+
+
+################################################################################
+### CATEGORIA: CUSTOM HOOKS
+################################################################################
+
+================================================================================
+ARCHIVO #30: src/hooks/useAuth.ts
+UBICACION RELATIVA: src/hooks/useAuth.ts
+CATEGORIA: Custom Hooks
+LENGUAJE: TypeScript (.ts)
+LINEAS: 15 | TAMANO: 412 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/hooks/useAuth.ts >>>
+import { useContext } from 'react';
+import { AuthContext } from '../features/auth/AuthContext';
+import type { AuthContextValue } from '../types/auth.types';
+
+export function useAuth(): AuthContextValue {
+    const context = useContext(AuthContext);
+
+    if (!context) {
+        throw new Error(
+            'useAuth debe utilizarse dentro de Authenticator.',
+        );
+    }
+
+    return context;
+}
+
+<<< FIN DEL ARCHIVO: src/hooks/useAuth.ts >>>
+
+
+================================================================================
+ARCHIVO #31: src/hooks/useTasks.ts
+UBICACION RELATIVA: src/hooks/useTasks.ts
+CATEGORIA: Custom Hooks
+LENGUAJE: TypeScript (.ts)
+LINEAS: 134 | TAMANO: 3044 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/hooks/useTasks.ts >>>
+import {
+    useCallback,
+    useEffect,
+    useState,
+} from 'react';
+
+import {
+    createTask,
+    deleteTask,
+    setTaskCompleted,
+    subscribeToUserTasks,
+    updateTask,
+} from '../features/tasks/taskService';
+
+import type {
+    Task,
+    TaskFilter,
+    TaskFormValues,
+} from '../types/task.types';
+
+import { getTaskErrorMessage } from '../utils/taskErrors';
+
+interface TasksState {
+    owner: string;
+    tasks: Task[];
+    loading: boolean;
+    error: string | null;
+}
+
+export function useTasks(userId: string) {
+    const [state, setState] = useState<TasksState>({
+        owner: userId,
+        tasks: [],
+        loading: true,
+        error: null,
+    });
+
+    const [filter, setFilter] = useState<TaskFilter>('all');
+
+    useEffect(() => {
+        let active = true;
+
+        const unsubscribe = subscribeToUserTasks(
+            userId,
+            tasks => {
+                if (!active) return;
+
+                setState({
+                    owner: userId,
+                    tasks,
+                    loading: false,
+                    error: null,
+                });
+            },
+            failure => {
+                if (!active) return;
+
+                setState({
+                    owner: userId,
+                    tasks: [],
+                    loading: false,
+                    error: getTaskErrorMessage(failure),
+                });
+            },
+        );
+
+        return () => {
+            active = false;
+            unsubscribe();
+        };
+    }, [userId]);
+
+    const current: TasksState =
+        state.owner === userId
+            ? state
+            : {
+                owner: userId,
+                tasks: [],
+                loading: true,
+                error: null,
+            };
+
+    const addTask = useCallback(
+        (values: TaskFormValues) =>
+            createTask(userId, values),
+        [userId],
+    );
+
+    const editTask = useCallback(
+        (taskId: string, values: TaskFormValues) =>
+            updateTask(taskId, values),
+        [],
+    );
+
+    const toggleTask = useCallback(
+        (task: Task) =>
+            setTaskCompleted(task.id, !task.completed),
+        [],
+    );
+
+    const removeTask = useCallback(
+        (taskId: string) => deleteTask(taskId),
+        [],
+    );
+
+    const { tasks, loading, error } = current;
+
+    const filteredTasks = tasks.filter(task => {
+        if (filter === 'pending') return !task.completed;
+        if (filter === 'completed') return task.completed;
+
+        return true;
+    });
+
+    const counts = {
+        all: tasks.length,
+        pending: tasks.filter(task => !task.completed).length,
+        completed: tasks.filter(task => task.completed).length,
+    };
+
+    return {
+        tasks,
+        filteredTasks,
+        counts,
+        loading,
+        error,
+        filter,
+        setFilter,
+        addTask,
+        editTask,
+        toggleTask,
+        removeTask,
+    };
+}
+
+<<< FIN DEL ARCHIVO: src/hooks/useTasks.ts >>>
+
+
+
+################################################################################
+### CATEGORIA: RUTAS (ROUTING Y PROTECCION)
+################################################################################
+
+================================================================================
+ARCHIVO #32: src/routes/ProtectedRoute.tsx
+UBICACION RELATIVA: src/routes/ProtectedRoute.tsx
+CATEGORIA: Rutas (Routing y Proteccion)
+LENGUAJE: TypeScript React (.tsx)
+LINEAS: 38 | TAMANO: 854 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/routes/ProtectedRoute.tsx >>>
+import type { ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
+
+import { useAuth } from '../hooks/useAuth';
+
+interface ProtectedRouteProps {
+    children: ReactNode;
+}
+
+export function ProtectedRoute({
+    children,
+}: ProtectedRouteProps) {
+    const { user, loading, error } = useAuth();
+
+    if (loading) {
+        return (
+            <main className="screen-center">
+                <p role="status">Comprobando sesión...</p>
+            </main>
+        );
+    }
+
+    if (error) {
+        return (
+            <main className="screen-center">
+                <p className="alert-error" role="alert">
+                    {error}
+                </p>
+            </main>
+        );
+    }
+
+    if (!user) {
+        return <Navigate to="/login" replace />;
+    }
+
+    return <>{children}</>;
+}
+
+<<< FIN DEL ARCHIVO: src/routes/ProtectedRoute.tsx >>>
+
+
+================================================================================
+ARCHIVO #33: src/routes/PublicRoute.tsx
+UBICACION RELATIVA: src/routes/PublicRoute.tsx
+CATEGORIA: Rutas (Routing y Proteccion)
+LENGUAJE: TypeScript React (.tsx)
+LINEAS: 38 | TAMANO: 844 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/routes/PublicRoute.tsx >>>
+import type { ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
+
+import { useAuth } from '../hooks/useAuth';
+
+interface PublicRouteProps {
+    children: ReactNode;
+}
+
+export function PublicRoute({
+    children,
+}: PublicRouteProps) {
+    const { user, loading, error } = useAuth();
+
+    if (loading) {
+        return (
+            <main className="screen-center">
+                <p role="status">Comprobando sesión...</p>
+            </main>
+        );
+    }
+
+    if (error) {
+        return (
+            <main className="screen-center">
+                <p className="alert-error" role="alert">
+                    {error}
+                </p>
+            </main>
+        );
+    }
+
+    if (user) {
+        return <Navigate to="/tasks" replace />;
+    }
+
+    return <>{children}</>;
+}
+
+<<< FIN DEL ARCHIVO: src/routes/PublicRoute.tsx >>>
+
+
+
+################################################################################
+### CATEGORIA: PAGINAS (PAGES / VISTAS)
+################################################################################
+
+================================================================================
+ARCHIVO #34: src/pages/LoginPage.tsx
+UBICACION RELATIVA: src/pages/LoginPage.tsx
+CATEGORIA: Paginas (Pages / Vistas)
+LENGUAJE: TypeScript React (.tsx)
+LINEAS: 5 | TAMANO: 125 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/pages/LoginPage.tsx >>>
+import { AuthForm } from '../components/AuthForm';
+
+export function LoginPage() {
+    return <AuthForm mode="login" />;
+}
+
+<<< FIN DEL ARCHIVO: src/pages/LoginPage.tsx >>>
+
+
+================================================================================
+ARCHIVO #35: src/pages/RegisterPage.tsx
+UBICACION RELATIVA: src/pages/RegisterPage.tsx
+CATEGORIA: Paginas (Pages / Vistas)
+LENGUAJE: TypeScript React (.tsx)
+LINEAS: 5 | TAMANO: 131 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/pages/RegisterPage.tsx >>>
+import { AuthForm } from '../components/AuthForm';
+
+export function RegisterPage() {
+    return <AuthForm mode="register" />;
+}
+
+<<< FIN DEL ARCHIVO: src/pages/RegisterPage.tsx >>>
+
+
+================================================================================
+ARCHIVO #36: src/pages/TasksPage.tsx
+UBICACION RELATIVA: src/pages/TasksPage.tsx
+CATEGORIA: Paginas (Pages / Vistas)
+LENGUAJE: TypeScript React (.tsx)
+LINEAS: 98 | TAMANO: 2814 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/pages/TasksPage.tsx >>>
+import { TodoForm } from '../components/TodoForm';
+import { TodoList } from '../components/TodoList';
+
+import { useAuth } from '../hooks/useAuth';
+import { useTasks } from '../hooks/useTasks';
+
+import type { TaskFilter } from '../types/task.types';
+
+const filters: {
+    key: TaskFilter;
+    label: string;
+}[] = [
+        { key: 'all', label: 'Todas' },
+        { key: 'pending', label: 'Pendientes' },
+        { key: 'completed', label: 'Completadas' },
+    ];
+
+function UserTasks({ userId }: { userId: string }) {
+    const {
+        filteredTasks,
+        counts,
+        loading,
+        error,
+        filter,
+        setFilter,
+        addTask,
+        editTask,
+        toggleTask,
+        removeTask,
+    } = useTasks(userId);
+
+    return (
+        <div className="tasks-page">
+            <div className="page-heading">
+                <h1>Mis tareas</h1>
+
+                <p className="muted">
+                    Organizá tus pendientes y registrá tus avances.
+                </p>
+            </div>
+
+            <section
+                className="content-card"
+                aria-label="Crear una tarea"
+            >
+                <TodoForm onSubmit={addTask} />
+            </section>
+
+            <section
+                className="tasks-panel"
+                aria-label="Listado de tareas"
+            >
+                <div
+                    className="filter-bar"
+                    role="group"
+                    aria-label="Filtrar tareas"
+                >
+                    {filters.map(({ key, label }) => (
+                        <button
+                            key={key}
+                            className="filter-btn"
+                            type="button"
+                            aria-pressed={filter === key}
+                            onClick={() => setFilter(key)}
+                        >
+                            {label} ({counts[key]})
+                        </button>
+                    ))}
+                </div>
+
+                {error ? (
+                    <p className="alert-error" role="alert">
+                        No se pudieron cargar tus tareas. {error}
+                    </p>
+                ) : (
+                    <TodoList
+                        tasks={filteredTasks}
+                        loading={loading}
+                        onToggle={toggleTask}
+                        onEdit={editTask}
+                        onDelete={removeTask}
+                    />
+                )}
+            </section>
+        </div>
+    );
+}
+
+export function TasksPage() {
+    const { user } = useAuth();
+
+    return user ? (
+        <UserTasks
+            key={user.uid}
+            userId={user.uid}
+        />
+    ) : null;
+}
+
+<<< FIN DEL ARCHIVO: src/pages/TasksPage.tsx >>>
+
+
+
+################################################################################
+### CATEGORIA: COMPONENTES DE UI
+################################################################################
+
+================================================================================
+ARCHIVO #37: src/components/AppLayout.tsx
+UBICACION RELATIVA: src/components/AppLayout.tsx
+CATEGORIA: Componentes de UI
+LENGUAJE: TypeScript React (.tsx)
+LINEAS: 69 | TAMANO: 2118 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/components/AppLayout.tsx >>>
+import { useState } from 'react';
+import { Link, Outlet } from 'react-router-dom';
+
+import { SendSummaryButton } from './SendSummaryButton';
+
+import { useAuth } from '../hooks/useAuth';
+import { logoutUser } from '../features/auth/authService';
+import { getAuthErrorMessage } from '../utils/firebaseErrors';
+
+export function AppLayout() {
+    const { user } = useAuth();
+
+    const [closingSession, setClosingSession] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    async function handleLogout(): Promise<void> {
+        setError(null);
+        setClosingSession(true);
+
+        try {
+            await logoutUser();
+        } catch (failure) {
+            setError(getAuthErrorMessage(failure));
+        } finally {
+            setClosingSession(false);
+        }
+    }
+
+    return (
+        <div className="app-shell">
+            <header className="app-header">
+                <div>
+                    <Link className="brand" to="/tasks">
+                        MateCode
+                    </Link>
+
+                    <p className="user-email">
+                        {user?.displayName || user?.email}
+                    </p>
+                </div>
+
+                <div className="header-actions">
+                    <SendSummaryButton key={user?.uid} />
+
+                    <button
+                        className="btn-secondary"
+                        type="button"
+                        onClick={() => void handleLogout()}
+                        disabled={closingSession}
+                    >
+                        {closingSession
+                            ? 'Cerrando sesión...'
+                            : 'Cerrar sesión'}
+                    </button>
+                </div>
+            </header>
+
+            <main className="main-content">
+                {error && (
+                    <p className="alert-error" role="alert">
+                        {error}
+                    </p>
+                )}
+
+                <Outlet />
+            </main>
+        </div>
+    );
+}
+
+<<< FIN DEL ARCHIVO: src/components/AppLayout.tsx >>>
+
+
+================================================================================
+ARCHIVO #38: src/components/AuthForm.tsx
+UBICACION RELATIVA: src/components/AuthForm.tsx
+CATEGORIA: Componentes de UI
+LENGUAJE: TypeScript React (.tsx)
+LINEAS: 204 | TAMANO: 6518 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/components/AuthForm.tsx >>>
+import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
+
+import { FormField } from './FormField';
+
+import {
+    loginWithEmail,
+    loginWithGoogle,
+    registerWithEmail,
+} from '../features/auth/authService';
+
+import { getAuthErrorMessage } from '../utils/firebaseErrors';
+
+import {
+    validateAuth,
+    type AuthFormErrors,
+} from '../utils/validateAuth';
+
+import type { AuthFormValues } from '../types/auth.types';
+
+interface AuthFormProps {
+    mode: 'login' | 'register';
+}
+
+type SubmitMethod = 'email' | 'google';
+
+export function AuthForm({ mode }: AuthFormProps) {
+    const isRegister = mode === 'register';
+
+    const [values, setValues] = useState<AuthFormValues>({
+        email: '',
+        password: '',
+    });
+
+    const [confirmPassword, setConfirmPassword] = useState('');
+
+    const [errors, setErrors] = useState<AuthFormErrors>({});
+    const [serverError, setServerError] = useState<string | null>(null);
+
+    const [submitting, setSubmitting] =
+        useState<SubmitMethod | null>(null);
+
+    const busy = submitting !== null;
+
+    async function perform(
+        operation: () => Promise<void>,
+        method: SubmitMethod,
+    ): Promise<void> {
+        if (submitting) return;
+
+        setServerError(null);
+        setSubmitting(method);
+
+        try {
+            await operation();
+        } catch (error) {
+            setServerError(getAuthErrorMessage(error));
+        } finally {
+            setSubmitting(null);
+        }
+    }
+
+    async function handleSubmit(
+        event: FormEvent<HTMLFormElement>,
+    ): Promise<void> {
+        event.preventDefault();
+        setServerError(null);
+
+        const validationErrors = validateAuth(
+            values,
+            isRegister,
+            confirmPassword,
+        );
+
+        setErrors(validationErrors);
+
+        if (Object.keys(validationErrors).length > 0) return;
+
+        const operation = isRegister
+            ? registerWithEmail
+            : loginWithEmail;
+
+        await perform(() => operation(values), 'email');
+    }
+
+    function handleGoogle(): void {
+        setErrors({});
+        void perform(loginWithGoogle, 'google');
+    }
+
+    return (
+        <main className="auth-container">
+            <section className="auth-card">
+                <p className="brand">MateCode</p>
+
+                <h1>
+                    {isRegister ? 'Crear una cuenta' : 'Iniciar sesión'}
+                </h1>
+
+                <p className="muted">
+                    Organizá tus tareas y consultalas desde cualquier dispositivo.
+                </p>
+
+                {serverError && (
+                    <div className="alert-error" role="alert">
+                        {serverError}
+                    </div>
+                )}
+
+                <form
+                    className="auth-form"
+                    onSubmit={handleSubmit}
+                    noValidate
+                >
+                    <FormField
+                        label="Correo electrónico"
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        placeholder="nombre@ejemplo.com"
+                        value={values.email}
+                        onChange={event =>
+                            setValues(previous => ({
+                                ...previous,
+                                email: event.target.value,
+                            }))
+                        }
+                        error={errors.email}
+                        disabled={busy}
+                        required
+                    />
+
+                    <FormField
+                        label="Contraseña"
+                        name="password"
+                        type="password"
+                        autoComplete={
+                            isRegister ? 'new-password' : 'current-password'
+                        }
+                        value={values.password}
+                        onChange={event =>
+                            setValues(previous => ({
+                                ...previous,
+                                password: event.target.value,
+                            }))
+                        }
+                        error={errors.password}
+                        disabled={busy}
+                        required
+                    />
+
+                    {isRegister && (
+                        <FormField
+                            label="Confirmar contraseña"
+                            name="confirmPassword"
+                            type="password"
+                            autoComplete="new-password"
+                            value={confirmPassword}
+                            onChange={event =>
+                                setConfirmPassword(event.target.value)
+                            }
+                            error={errors.confirmPassword}
+                            disabled={busy}
+                            required
+                        />
+                    )}
+
+                    <button
+                        className="btn-primary"
+                        type="submit"
+                        disabled={busy}
+                    >
+                        {submitting === 'email'
+                            ? 'Procesando...'
+                            : isRegister
+                                ? 'Crear cuenta'
+                                : 'Ingresar'}
+                    </button>
+                </form>
+
+                <div className="divider">o</div>
+
+                <button
+                    className="btn-secondary"
+                    type="button"
+                    onClick={handleGoogle}
+                    disabled={busy}
+                >
+                    {submitting === 'google'
+                        ? 'Conectando con Google...'
+                        : 'Continuar con Google'}
+                </button>
+
+                <p className="auth-footer">
+                    {isRegister ? '¿Ya tenés cuenta? ' : '¿Todavía no tenés cuenta? '}
+
+                    <Link to={isRegister ? '/login' : '/register'}>
+                        {isRegister ? 'Iniciá sesión' : 'Registrate'}
+                    </Link>
+                </p>
+            </section>
+        </main>
+    );
+}
+
+<<< FIN DEL ARCHIVO: src/components/AuthForm.tsx >>>
+
+
+================================================================================
+ARCHIVO #39: src/components/FormField.tsx
+UBICACION RELATIVA: src/components/FormField.tsx
+CATEGORIA: Componentes de UI
+LENGUAJE: TypeScript React (.tsx)
+LINEAS: 40 | TAMANO: 907 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/components/FormField.tsx >>>
+import {
+    useId,
+    type InputHTMLAttributes,
+} from 'react';
+
+interface FormFieldProps
+    extends InputHTMLAttributes<HTMLInputElement> {
+    label: string;
+    error?: string;
+}
+
+export function FormField({
+    label,
+    error,
+    id,
+    ...inputProps
+}: FormFieldProps) {
+    const generatedId = useId();
+    const inputId = id ?? generatedId;
+    const errorId = `${inputId}-error`;
+
+    return (
+        <div className="field">
+            <label htmlFor={inputId}>{label}</label>
+
+            <input
+                {...inputProps}
+                id={inputId}
+                aria-invalid={Boolean(error)}
+                aria-describedby={error ? errorId : undefined}
+            />
+
+            {error && (
+                <p id={errorId} className="field-error">
+                    {error}
+                </p>
+            )}
+        </div>
+    );
+}
+
+<<< FIN DEL ARCHIVO: src/components/FormField.tsx >>>
+
+
+================================================================================
+ARCHIVO #40: src/components/TodoForm.tsx
+UBICACION RELATIVA: src/components/TodoForm.tsx
+CATEGORIA: Componentes de UI
+LENGUAJE: TypeScript React (.tsx)
+LINEAS: 177 | TAMANO: 5140 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/components/TodoForm.tsx >>>
+import {
+    useId,
+    useState,
+    type FormEvent,
+} from 'react';
+
+import { FormField } from './FormField';
+
+import type {
+    TaskFormErrors,
+    TaskFormValues,
+} from '../types/task.types';
+
+import { validateTask } from '../utils/validateTask';
+import { getTaskErrorMessage } from '../utils/taskErrors';
+
+interface TodoFormProps {
+    onSubmit: (values: TaskFormValues) => Promise<void>;
+    initialValues?: TaskFormValues;
+    onCancel?: () => void;
+}
+
+export function TodoForm({
+    onSubmit,
+    initialValues,
+    onCancel,
+}: TodoFormProps) {
+    const descriptionId = useId();
+    const descriptionErrorId = `${descriptionId}-error`;
+
+    const [values, setValues] = useState<TaskFormValues>(
+        initialValues ?? {
+            title: '',
+            description: '',
+        },
+    );
+
+    const [errors, setErrors] = useState<TaskFormErrors>({});
+    const [serverError, setServerError] =
+        useState<string | null>(null);
+
+    const [submitting, setSubmitting] = useState(false);
+
+    const isEditing = initialValues !== undefined;
+
+    async function handleSubmit(
+        event: FormEvent<HTMLFormElement>,
+    ): Promise<void> {
+        event.preventDefault();
+
+        if (submitting) return;
+
+        setServerError(null);
+
+        const validationErrors = validateTask(values);
+        setErrors(validationErrors);
+
+        if (Object.keys(validationErrors).length > 0) return;
+
+        setSubmitting(true);
+
+        try {
+            await onSubmit({
+                title: values.title.trim(),
+                description: values.description.trim(),
+            });
+
+            if (!isEditing) {
+                setValues({
+                    title: '',
+                    description: '',
+                });
+            }
+        } catch (failure) {
+            setServerError(getTaskErrorMessage(failure));
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    return (
+        <form
+            className="todo-form"
+            onSubmit={handleSubmit}
+            aria-busy={submitting}
+            noValidate
+        >
+            <h2>{isEditing ? 'Editar tarea' : 'Nueva tarea'}</h2>
+
+            {serverError && (
+                <p className="alert-error" role="alert">
+                    {serverError}
+                </p>
+            )}
+
+            <FormField
+                label="Título"
+                name="title"
+                type="text"
+                placeholder="Ejemplo: preparar la presentación"
+                value={values.title}
+                onChange={event =>
+                    setValues(previous => ({
+                        ...previous,
+                        title: event.target.value,
+                    }))
+                }
+                error={errors.title}
+                maxLength={100}
+                disabled={submitting}
+                required
+            />
+
+            <div className="field">
+                <label htmlFor={descriptionId}>
+                    Descripción
+                </label>
+
+                <textarea
+                    id={descriptionId}
+                    name="description"
+                    placeholder="Detalles de la tarea..."
+                    value={values.description}
+                    onChange={event =>
+                        setValues(previous => ({
+                            ...previous,
+                            description: event.target.value,
+                        }))
+                    }
+                    maxLength={300}
+                    rows={3}
+                    disabled={submitting}
+                    aria-invalid={Boolean(errors.description)}
+                    aria-describedby={
+                        errors.description
+                            ? descriptionErrorId
+                            : undefined
+                    }
+                />
+
+                {errors.description && (
+                    <p
+                        id={descriptionErrorId}
+                        className="field-error"
+                    >
+                        {errors.description}
+                    </p>
+                )}
+            </div>
+
+            <div className="todo-actions">
+                <button
+                    className="btn-primary"
+                    type="submit"
+                    disabled={submitting}
+                >
+                    {submitting
+                        ? 'Guardando...'
+                        : isEditing
+                            ? 'Guardar cambios'
+                            : 'Agregar tarea'}
+                </button>
+
+                {onCancel && (
+                    <button
+                        className="btn-secondary"
+                        type="button"
+                        onClick={onCancel}
+                        disabled={submitting}
+                    >
+                        Cancelar
+                    </button>
+                )}
+            </div>
+        </form>
+    );
+}
+
+<<< FIN DEL ARCHIVO: src/components/TodoForm.tsx >>>
+
+
+================================================================================
+ARCHIVO #41: src/components/TodoItem.tsx
+UBICACION RELATIVA: src/components/TodoItem.tsx
+CATEGORIA: Componentes de UI
+LENGUAJE: TypeScript React (.tsx)
+LINEAS: 156 | TAMANO: 4536 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/components/TodoItem.tsx >>>
+import { useState } from 'react';
+
+import { TodoForm } from './TodoForm';
+
+import type {
+    Task,
+    TaskFormValues,
+} from '../types/task.types';
+
+import { getTaskErrorMessage } from '../utils/taskErrors';
+
+interface TodoItemProps {
+    task: Task;
+    onToggle: (task: Task) => Promise<void>;
+    onEdit: (
+        taskId: string,
+        values: TaskFormValues,
+    ) => Promise<void>;
+    onDelete: (taskId: string) => Promise<void>;
+}
+
+type TaskAction = 'toggle' | 'delete';
+
+export function TodoItem({
+    task,
+    onToggle,
+    onEdit,
+    onDelete,
+}: TodoItemProps) {
+    const [editing, setEditing] = useState(false);
+    const [action, setAction] =
+        useState<TaskAction | null>(null);
+
+    const [error, setError] = useState<string | null>(null);
+
+    const busy = action !== null;
+
+    async function perform(
+        operation: () => Promise<void>,
+        nextAction: TaskAction,
+    ): Promise<void> {
+        if (action) return;
+
+        setError(null);
+        setAction(nextAction);
+
+        try {
+            await operation();
+        } catch (failure) {
+            setError(getTaskErrorMessage(failure));
+        } finally {
+            setAction(null);
+        }
+    }
+
+    if (editing) {
+        return (
+            <li className="todo-item todo-item--editing">
+                <TodoForm
+                    initialValues={{
+                        title: task.title,
+                        description: task.description,
+                    }}
+                    onSubmit={async values => {
+                        await onEdit(task.id, values);
+                        setEditing(false);
+                    }}
+                    onCancel={() => setEditing(false)}
+                />
+            </li>
+        );
+    }
+
+    return (
+        <li
+            className={`todo-item ${task.completed ? 'todo-item--completed' : ''
+                }`}
+            aria-busy={busy}
+        >
+            <div className="todo-main">
+                <input
+                    className="task-checkbox"
+                    type="checkbox"
+                    checked={task.completed}
+                    disabled={busy}
+                    aria-label={`${task.completed
+                            ? 'Marcar como pendiente'
+                            : 'Marcar como completada'
+                        }: ${task.title}`}
+                    onChange={() =>
+                        void perform(
+                            () => onToggle(task),
+                            'toggle',
+                        )
+                    }
+                />
+
+                <div className="todo-content">
+                    <h3 className="todo-title">
+                        {task.title}
+                    </h3>
+
+                    {task.description && (
+                        <p className="todo-description">
+                            {task.description}
+                        </p>
+                    )}
+
+                    <span className="task-status">
+                        {task.completed ? 'Completada' : 'Pendiente'}
+                    </span>
+
+                    {action === 'toggle' && (
+                        <p role="status">Actualizando estado...</p>
+                    )}
+                </div>
+            </div>
+
+            <div className="todo-actions">
+                <button
+                    className="btn-secondary"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                        setError(null);
+                        setEditing(true);
+                    }}
+                >
+                    Editar
+                </button>
+
+                <button
+                    className="btn-danger"
+                    type="button"
+                    disabled={busy}
+                    onClick={() =>
+                        void perform(
+                            () => onDelete(task.id),
+                            'delete',
+                        )
+                    }
+                >
+                    {action === 'delete'
+                        ? 'Eliminando...'
+                        : 'Eliminar'}
+                </button>
+            </div>
+
+            {error && (
+                <p className="alert-error task-error" role="alert">
+                    {error}
+                </p>
+            )}
+        </li>
+    );
+}
+
+<<< FIN DEL ARCHIVO: src/components/TodoItem.tsx >>>
+
+
+================================================================================
+ARCHIVO #42: src/components/TodoList.tsx
+UBICACION RELATIVA: src/components/TodoList.tsx
+CATEGORIA: Componentes de UI
+LENGUAJE: TypeScript React (.tsx)
+LINEAS: 55 | TAMANO: 1250 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/components/TodoList.tsx >>>
+import { TodoItem } from './TodoItem';
+
+import type {
+    Task,
+    TaskFormValues,
+} from '../types/task.types';
+
+interface TodoListProps {
+    tasks: Task[];
+    loading: boolean;
+    onToggle: (task: Task) => Promise<void>;
+    onEdit: (
+        taskId: string,
+        values: TaskFormValues,
+    ) => Promise<void>;
+    onDelete: (taskId: string) => Promise<void>;
+}
+
+export function TodoList({
+    tasks,
+    loading,
+    onToggle,
+    onEdit,
+    onDelete,
+}: TodoListProps) {
+    if (loading) {
+        return (
+            <p className="status-message" role="status">
+                Cargando tareas...
+            </p>
+        );
+    }
+
+    if (tasks.length === 0) {
+        return (
+            <p className="status-message">
+                No hay tareas para mostrar en esta vista.
+            </p>
+        );
+    }
+
+    return (
+        <ul className="todo-list" aria-label="Tareas">
+            {tasks.map(task => (
+                <TodoItem
+                    key={task.id}
+                    task={task}
+                    onToggle={onToggle}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                />
+            ))}
+        </ul>
+    );
+}
+
+<<< FIN DEL ARCHIVO: src/components/TodoList.tsx >>>
+
+
+================================================================================
+ARCHIVO #43: src/components/SendSummaryButton.tsx
+UBICACION RELATIVA: src/components/SendSummaryButton.tsx
+CATEGORIA: Componentes de UI
+LENGUAJE: TypeScript React (.tsx)
+LINEAS: 113 | TAMANO: 3483 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/components/SendSummaryButton.tsx >>>
+import { useState } from 'react';
+import { FirebaseError } from 'firebase/app';
+
+import { useAuth } from '../hooks/useAuth';
+
+import {
+    requestEmailVerification,
+    sendTasksSummaryEmail,
+} from '../services/emailService';
+
+import { getAuthErrorMessage } from '../utils/firebaseErrors';
+
+type EmailStatus = 'idle' | 'loading' | 'success' | 'error';
+type EmailAction = 'summary' | 'verification';
+
+export function SendSummaryButton() {
+    const { user } = useAuth();
+
+    const [status, setStatus] =
+        useState<EmailStatus>('idle');
+
+    const [action, setAction] =
+        useState<EmailAction | null>(null);
+
+    const [message, setMessage] = useState('');
+
+    const busy = status === 'loading';
+
+    async function perform(
+        nextAction: EmailAction,
+        operation: () => Promise<string>,
+    ): Promise<void> {
+        if (busy) return;
+
+        setStatus('loading');
+        setAction(nextAction);
+        setMessage('');
+
+        try {
+            const result = await operation();
+
+            setMessage(result);
+            setStatus('success');
+        } catch (error) {
+            const errorMessage =
+                error instanceof FirebaseError
+                    ? getAuthErrorMessage(error)
+                    : error instanceof Error
+                        ? error.message
+                        : 'No se pudo completar la operación.';
+
+            setMessage(errorMessage);
+            setStatus('error');
+        } finally {
+            setAction(null);
+        }
+    }
+
+    return (
+        <div className="email-actions">
+            <button
+                className="btn-primary"
+                type="button"
+                disabled={!user || busy}
+                onClick={() =>
+                    void perform('summary', async () => {
+                        const result = await sendTasksSummaryEmail();
+                        return result.message;
+                    })
+                }
+            >
+                {busy && action === 'summary'
+                    ? 'Enviando resumen...'
+                    : 'Enviar resumen por email'}
+            </button>
+
+            {user && !user.emailVerified && (
+                <button
+                    className="btn-secondary"
+                    type="button"
+                    disabled={busy}
+                    onClick={() =>
+                        void perform('verification', async () => {
+                            await requestEmailVerification();
+
+                            return (
+                                'Te enviamos un enlace de Firebase. ' +
+                                'Abrilo y después volvé a enviar el resumen.'
+                            );
+                        })
+                    }
+                >
+                    {busy && action === 'verification'
+                        ? 'Enviando verificación...'
+                        : 'Verificar mi correo'}
+                </button>
+            )}
+
+            {message && (
+                <p
+                    className={
+                        status === 'error'
+                            ? 'alert-error'
+                            : 'email-feedback'
+                    }
+                    role={status === 'error' ? 'alert' : 'status'}
+                >
+                    {message}
+                </p>
+            )}
+        </div>
+    );
+}
+
+<<< FIN DEL ARCHIVO: src/components/SendSummaryButton.tsx >>>
+
+
+
+################################################################################
+### CATEGORIA: PUNTO DE ENTRADA Y ESTILOS
+################################################################################
+
+================================================================================
+ARCHIVO #44: src/main.tsx
+UBICACION RELATIVA: src/main.tsx
+CATEGORIA: Punto de Entrada y Estilos
+LENGUAJE: TypeScript React (.tsx)
+LINEAS: 21 | TAMANO: 469 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/main.tsx >>>
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+
+import App from './App';
+import { Authenticator } from './features/auth/Authenticator';
+
+import './index.css';
+
+const rootElement = document.getElementById('root');
+
+if (!rootElement) {
+  throw new Error('No se encontró el elemento raíz de la aplicación.');
+}
+
+createRoot(rootElement).render(
+  <StrictMode>
+    <Authenticator>
+      <App />
+    </Authenticator>
+  </StrictMode>,
+);
+
+<<< FIN DEL ARCHIVO: src/main.tsx >>>
+
+
+================================================================================
+ARCHIVO #45: src/App.tsx
+UBICACION RELATIVA: src/App.tsx
+CATEGORIA: Punto de Entrada y Estilos
+LENGUAJE: TypeScript React (.tsx)
+LINEAS: 56 | TAMANO: 1170 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/App.tsx >>>
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from 'react-router-dom';
+
+import { AppLayout } from './components/AppLayout';
+
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { TasksPage } from './pages/TasksPage';
+
+import { ProtectedRoute } from './routes/ProtectedRoute';
+import { PublicRoute } from './routes/PublicRoute';
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          }
+        />
+
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <RegisterPage />
+            </PublicRoute>
+          }
+        />
+
+        <Route
+          element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/tasks" element={<TasksPage />} />
+        </Route>
+
+        <Route
+          path="*"
+          element={<Navigate to="/tasks" replace />}
+        />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+<<< FIN DEL ARCHIVO: src/App.tsx >>>
+
+
+================================================================================
+ARCHIVO #46: src/App.css
+UBICACION RELATIVA: src/App.css
+CATEGORIA: Punto de Entrada y Estilos
+LENGUAJE: CSS (.css)
+LINEAS: 185 | TAMANO: 2891 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/App.css >>>
+.counter {
+  font-size: 16px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
+  margin-bottom: 24px;
+
+  &:hover {
+    border-color: var(--accent-border);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+.hero {
+  position: relative;
+
+  .base,
+  .framework,
+  .vite {
+    inset-inline: 0;
+    margin: 0 auto;
+  }
+
+  .base {
+    width: 170px;
+    position: relative;
+    z-index: 0;
+  }
+
+  .framework,
+  .vite {
+    position: absolute;
+  }
+
+  .framework {
+    z-index: 1;
+    top: 34px;
+    height: 28px;
+    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
+      scale(1.4);
+  }
+
+  .vite {
+    z-index: 0;
+    top: 107px;
+    height: 26px;
+    width: auto;
+    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
+      scale(0.8);
+  }
+}
+
+#center {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  place-content: center;
+  place-items: center;
+  flex-grow: 1;
+
+  @media (max-width: 1024px) {
+    padding: 32px 20px 24px;
+    gap: 18px;
+  }
+}
+
+#next-steps {
+  display: flex;
+  border-top: 1px solid var(--border);
+  text-align: left;
+
+  & > div {
+    flex: 1 1 0;
+    padding: 32px;
+    @media (max-width: 1024px) {
+      padding: 24px 20px;
+    }
+  }
+
+  .icon {
+    margin-bottom: 16px;
+    width: 22px;
+    height: 22px;
+  }
+
+  @media (max-width: 1024px) {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+#docs {
+  border-right: 1px solid var(--border);
+
+  @media (max-width: 1024px) {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+#next-steps ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  gap: 8px;
+  margin: 32px 0 0;
+
+  .logo {
+    height: 18px;
+  }
+
+  a {
+    color: var(--text-h);
+    font-size: 16px;
+    border-radius: 6px;
+    background: var(--social-bg);
+    display: flex;
+    padding: 6px 12px;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: box-shadow 0.3s;
+
+    &:hover {
+      box-shadow: var(--shadow);
+    }
+    .button-icon {
+      height: 18px;
+      width: 18px;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    li {
+      flex: 1 1 calc(50% - 8px);
+    }
+
+    a {
+      width: 100%;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+  }
+}
+
+#spacer {
+  height: 88px;
+  border-top: 1px solid var(--border);
+  @media (max-width: 1024px) {
+    height: 48px;
+  }
+}
+
+.ticks {
+  position: relative;
+  width: 100%;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: -4.5px;
+    border: 5px solid transparent;
+  }
+
+  &::before {
+    left: 0;
+    border-left-color: var(--border);
+  }
+  &::after {
+    right: 0;
+    border-right-color: var(--border);
+  }
+}
+
+<<< FIN DEL ARCHIVO: src/App.css >>>
+
+
+================================================================================
+ARCHIVO #47: src/index.css
+UBICACION RELATIVA: src/index.css
+CATEGORIA: Punto de Entrada y Estilos
+LENGUAJE: CSS (.css)
+LINEAS: 441 | TAMANO: 6221 bytes
+================================================================================
+<<< INICIO DEL ARCHIVO: src/index.css >>>
+:root {
+  font-family: Inter, system-ui, Arial, sans-serif;
+  color: #172033;
+  background: #f3f5f9;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button,
+a,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: #2458d3;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 3px solid #91b5ff;
+  outline-offset: 3px;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 4vw, 2rem);
+}
+
+p {
+  line-height: 1.6;
+}
+
+.brand {
+  margin: 0;
+  color: #2458d3;
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.muted,
+.user-email {
+  color: #596579;
+}
+
+.auth-container,
+.screen-center {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 1.5rem;
+  background: white;
+  border: 1px solid #dfe5ee;
+  border-radius: 16px;
+  box-shadow: 0 12px 35px rgb(23 32 51 / 6%);
+}
+
+.auth-card>h1 {
+  margin-top: 0.75rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field label {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.field input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.7rem 0.8rem;
+  color: #172033;
+  background: white;
+  border: 1px solid #aeb9ca;
+  border-radius: 8px;
+}
+
+.field input[aria-invalid="true"] {
+  border-color: #b42318;
+}
+
+.field input:disabled {
+  background: #f3f5f9;
+}
+
+.field-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 0.875rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  min-height: 44px;
+  padding: 0.7rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.btn-primary {
+  color: white;
+  background: #2458d3;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #1946ae;
+}
+
+.btn-secondary {
+  color: #172033;
+  background: white;
+  border-color: #aeb9ca;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #f3f5f9;
+}
+
+.auth-card>.btn-secondary {
+  width: 100%;
+}
+
+.alert-error {
+  padding: 0.8rem 1rem;
+  color: #8f1e16;
+  background: #fff0ee;
+  border: 1px solid #f4b4ac;
+  border-radius: 8px;
+}
+
+.divider {
+  margin: 1rem 0;
+  color: #596579;
+  text-align: center;
+}
+
+.auth-footer {
+  margin-bottom: 0;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.app-shell {
+  width: min(100%, 1080px);
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.app-header {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid #dfe5ee;
+}
+
+.user-email {
+  margin: 0.35rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.main-content {
+  padding-top: 1.5rem;
+}
+
+.content-card {
+  padding: 1.5rem;
+  background: white;
+  border: 1px solid #dfe5ee;
+  border-radius: 12px;
+}
+
+@media (min-width: 640px) {
+  .auth-card {
+    padding: 2rem;
+  }
+
+  .app-shell {
+    padding: 1.5rem;
+  }
+
+  .app-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.tasks-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.page-heading p {
+  margin-bottom: 0;
+}
+
+.todo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.todo-form h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.field textarea {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  color: #172033;
+  background: white;
+  border: 1px solid #aeb9ca;
+  border-radius: 8px;
+  font: inherit;
+  resize: vertical;
+}
+
+.field textarea:disabled {
+  background: #f3f5f9;
+}
+
+.field textarea:focus-visible {
+  outline: 3px solid #91b5ff;
+  outline-offset: 3px;
+}
+
+.field textarea[aria-invalid="true"] {
+  border-color: #b42318;
+}
+
+.tasks-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filter-btn {
+  min-height: 44px;
+  padding: 0.6rem 0.9rem;
+  color: #172033;
+  background: white;
+  border: 1px solid #aeb9ca;
+  border-radius: 8px;
+  font: inherit;
+}
+
+.filter-btn[aria-pressed="true"] {
+  color: white;
+  background: #2458d3;
+  border-color: #2458d3;
+}
+
+.todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.todo-item {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: white;
+  border: 1px solid #dfe5ee;
+  border-radius: 12px;
+}
+
+.todo-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.task-checkbox {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 0.2rem;
+  accent-color: #2458d3;
+  cursor: pointer;
+}
+
+.task-checkbox:disabled {
+  cursor: wait;
+}
+
+.todo-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.todo-title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.todo-description {
+  margin: 0.5rem 0;
+  color: #596579;
+  white-space: pre-wrap;
+}
+
+.task-status {
+  display: inline-block;
+  margin-top: 0.5rem;
+  color: #596579;
+  font-size: 0.85rem;
+}
+
+.todo-item--completed .todo-title {
+  color: #596579;
+  text-decoration: line-through;
+}
+
+.todo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-danger {
+  min-height: 44px;
+  padding: 0.7rem 1rem;
+  color: #b42318;
+  background: #fff0ee;
+  border: 1px solid #f4b4ac;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #ffe0dc;
+}
+
+.task-error {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.status-message {
+  padding: 1.5rem;
+  margin: 0;
+  color: #596579;
+  background: white;
+  border: 1px dashed #aeb9ca;
+  border-radius: 12px;
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .todo-item:not(.todo-item--editing) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.email-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 360px;
+}
+
+.email-feedback {
+  margin: 0;
+  color: #2458d3;
+  font-size: 0.9rem;
+}
+
+.email-actions .alert-error {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+<<< FIN DEL ARCHIVO: src/index.css >>>
+
