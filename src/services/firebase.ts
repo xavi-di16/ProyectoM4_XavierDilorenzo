@@ -1,40 +1,32 @@
 import {
-    cert,
+    getApp,
     getApps,
     initializeApp,
-} from 'firebase-admin/app';
+} from 'firebase/app';
 
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
-export function getAdminServices() {
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY
-        ?.replace(/\\n/g, '\n');
+const firebaseConfig = {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+};
 
-    if (!projectId || !clientEmail || !privateKey) {
-        throw new Error(
-            'Faltan variables de entorno de Firebase Admin.',
-        );
-    }
+const missingVariables = Object.entries(firebaseConfig)
+    .filter(([, value]) => !value?.trim())
+    .map(([key]) => key);
 
-    const app =
-        getApps().find(item => item.name === 'matecode-server') ??
-        initializeApp(
-            {
-                credential: cert({
-                    projectId,
-                    clientEmail,
-                    privateKey,
-                }),
-                projectId,
-            },
-            'matecode-server',
-        );
-
-    return {
-        auth: getAuth(app),
-        db: getFirestore(app),
-    };
+if (missingVariables.length > 0) {
+    throw new Error(
+        `Falta configurar Firebase en .env: ${missingVariables.join(', ')}`,
+    );
 }
+
+const app = getApps().length > 0
+    ? getApp()
+    : initializeApp(firebaseConfig);
+
+export const auth = getAuth(app);
+export const db = getFirestore(app);
