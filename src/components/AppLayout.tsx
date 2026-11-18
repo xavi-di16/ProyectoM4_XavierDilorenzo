@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 
+import { SendSummaryButton } from './SendSummaryButton';
+
 import { useAuth } from '../hooks/useAuth';
 import { logoutUser } from '../features/auth/authService';
 import { getAuthErrorMessage } from '../utils/firebaseErrors';
@@ -37,14 +39,20 @@ export function AppLayout() {
                     </p>
                 </div>
 
-                <button
-                    className="btn-secondary"
-                    type="button"
-                    onClick={() => void handleLogout()}
-                    disabled={closingSession}
-                >
-                    {closingSession ? 'Cerrando sesión...' : 'Cerrar sesión'}
-                </button>
+                <div className="header-actions">
+                    <SendSummaryButton key={user?.uid} />
+
+                    <button
+                        className="btn-secondary"
+                        type="button"
+                        onClick={() => void handleLogout()}
+                        disabled={closingSession}
+                    >
+                        {closingSession
+                            ? 'Cerrando sesión...'
+                            : 'Cerrar sesión'}
+                    </button>
+                </div>
             </header>
 
             <main className="main-content">

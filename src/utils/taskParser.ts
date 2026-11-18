@@ -1,5 +1,5 @@
 import type { Task } from '../types/task.types';
-import { validateTask } from './validateTask';
+import { validateTask } from './validateTask.js';
 
 export function parseTask(
     id: string,
